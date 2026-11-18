@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ja" style="background:#d3d4d9">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#d3d4d9">
+<title>1.2GHz帯 SONY ↔︎ RAMSA変換</title>
+<style>
+:root{
+  --bg:#d3d4d9; --foot:#383c47; --card:#f3f4f6; --ink:#16181e; --mute:#4f5460;
+  --navy:#233985; --on-navy:#ffffff; --blue:#233985;
+  --field:#e8e9ed; --line:#aeb0b8; --btn:#e0e2e7;
+  --btn-bg:#f0f1f4; --btn-ink:#16181e; --btn-line:#a7a9b1;
+  --info-bg:#e3e7f7; --info-line:#a9b4e6; --info-ink:#1f3080;
+  --warn:#a42a1c; --th:#dcdee4; --stripe:#e9eaee; --rule:#bfc1c9;
+  --box:#fafafb; --red:#b5311f; --seg1:#e9eaee; --seg2:#dcdee6; --seg3:#cfd2dd;
+  --shadow:0 1px 3px rgba(20,22,40,.28);
+  --card-shadow:0 1px 6px rgba(20,22,40,.16);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{height:100%; min-height:100%}
+html{overflow-x:hidden; background:#d3d4d9 !important; min-height:100%; overscroll-behavior:none}
+body{
+  margin:0; background:#d3d4d9 !important; color:var(--ink);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+  line-height:1.3;
+}
+/* 1画面に収める: 画面の高さいっぱいを使い、表だけ内側でスクロール */
+.app{
+  max-width:520px; margin:0 auto; height:100vh; height:100dvh; background:var(--bg);
+  padding:max(8px,env(safe-area-inset-top)) 12px max(6px,env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden;
+}
+h1{
+  margin:12px 0 1.25em; text-align:center; font-weight:800;
+  font-size:clamp(16px,calc((100vw - 24px)/17.4),25px); line-height:1.25; flex:none; white-space:nowrap;
+}
+@font-face{font-family:"SRArrow"; src:url(data:font/woff;base64,d09GRgABAAAAAAKcAAoAAAAAAsQAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAABZAAAADAAAABgJXY3MGNtYXAAAAGgAAAALQAAADQADOBUZ2x5ZgAAAdgAAABUAAAAXGXQ5EhoZWFkAAAA9AAAADYAAAA2NTEKZmhoZWEAAAEsAAAAIAAAACQLWgfYaG10eAAAAZQAAAAMAAAADBAkAfRsb2NhAAAB0AAAAAgAAAAIABoALm1heHAAAAFMAAAAGAAAACAABQAMbmFtZQAAAiwAAABPAAAAYDFYl6xwb3N0AAACfAAAAB0AAAA2T4MX6gABAAAAAQAA650cT18PPPUAAwPoAAAAAOci41sAAAAA5yLjWwD6/8EG2gMPAAAAAwACAAAAAAAAeJxjYGRgYG75z8bAwH6F4RfDL7ZbDEARFMAMAIBPBUF4nGNgZGBgYGbgYgDRDAxMDGgAAAHDABJ4nGNgZk1knMDAysDCQAQQQGLbAwEDwwOGB4zMLf/ZGBiYWxh+oSlXYGAAAAFvBv4B9AAAB9QA+gZcAPp4nGNgYGBiYGBgBmIRIMkIplkYFIA0CxAC+Q8Y//8Hkgz//yswguUZAFmbBj4AAAAAAAAAABoALnicY2Bk+PX/INstZn4GTgYGYUZBRUFGEPGL8RqTCeO1f1p/zzBmMC7/95eR+V/kv0gg+ZeBAayHNQmohw2oB6LjF1MyE+vf33/nMvHAlAIAJPUdTnicJYjBCcAgEARHI0g+qSB15G8LZwU+xI8gHIjt50xmYBkWCDw4No747cZbRw5cOO25zL+91Z0lqY4ltc1elIyQUHOwrCuNSaegLz2CC8QAeJxjYGLAD5gZGBiZGJnZEouK8suNIJQhACPCBNIAAAA=) format("woff"); font-weight:400; font-style:normal}
+.af{font-family:"SRArrow",sans-serif; font-weight:400; font-style:normal; letter-spacing:0}
+.t-arr{color:var(--mute)}
+.t-sony{color:var(--red)} .t-ramsa{color:var(--blue)}
+button{font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible{outline:3px solid var(--blue); outline-offset:1px}
+
+.modes{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-bottom:8px; flex:none; width:100%}
+.mode{
+  min-height:66px; padding:4px 6px; border:1px solid var(--btn-line); border-radius:16px;
+  background:var(--btn-bg); color:var(--btn-ink); box-shadow:var(--shadow);
+  font-weight:800; font-size:clamp(13px,4.3vw,19px); white-space:nowrap; min-width:0; overflow:hidden;
+}
+.mode[aria-pressed="true"]{background:var(--navy); color:var(--on-navy)}
+
+.card{
+  background:var(--card); border-radius:18px; padding:10px 14px 12px;
+  box-shadow:var(--card-shadow); margin-bottom:8px; flex:none;
+}
+.card.tbl{flex:none}
+.lbl{margin:0 0 4px; font-weight:800; font-size:13px; color:var(--mute)}
+.block{margin-bottom:8px}
+.block:last-child{margin-bottom:0}
+
+.chips{display:grid; gap:6px}
+.chips.cols3{grid-template-columns:repeat(3,1fr)}
+.chips.cols4{grid-template-columns:repeat(4,1fr)}
+.chips.cols5{grid-template-columns:repeat(5,1fr)}
+#rg-groups .chip{font-weight:400}
+.chip{
+  width:100%; min-width:0; aspect-ratio:2/1; padding:0; border:1px solid var(--btn-line); border-radius:10px;
+  background:var(--btn-bg); color:var(--btn-ink); box-shadow:var(--shadow);
+  font-weight:800; font-size:clamp(14px,4.2vw,18px); white-space:nowrap;
+}
+.chip:active,.chip[aria-pressed="true"]{background:#2b6ff0; color:#ffffff; border-color:#1d57c9}
+.row{display:grid; grid-template-columns:46px 46px minmax(0,1fr); grid-template-rows:auto auto; gap:6px; align-items:center}
+.row .field{grid-column:3; grid-row:1}
+.row input[type=range]{grid-column:3; grid-row:2; margin:0}
+.row .stepper{grid-row:1 / span 2; align-self:stretch}
+.field{
+  width:100%; min-width:0; height:46px; border:2px solid var(--line); border-radius:12px;
+  background:var(--field); color:var(--ink); text-align:center;
+  font-family:inherit; font-weight:800; font-size:26px; line-height:1; letter-spacing:.05em;
+  font-variant-numeric:tabular-nums;
+}
+.field::placeholder{color:var(--mute); opacity:.85}
+@media (max-width:370px){.field::placeholder{font-size:.78em; letter-spacing:.02em}}
+.stepper{
+  border:1px solid var(--btn-line); border-radius:12px; background:var(--btn-bg); color:var(--btn-ink);
+  box-shadow:var(--shadow); font-size:26px; font-weight:800; line-height:1; padding:0;
+}
+.stepper:active{transform:translateY(1px)}
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:26px; margin:4px 0 0;
+  background:transparent; cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{height:8px; border-radius:5px; background:var(--line)}
+input[type=range]::-moz-range-track{height:8px; border-radius:5px; background:var(--line)}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:24px; height:24px; margin-top:-8px; border-radius:50%;
+  background:var(--navy); border:3px solid var(--card); box-shadow:0 1px 4px rgba(0,0,0,.4);
+}
+input[type=range]::-moz-range-thumb{
+  width:18px; height:18px; border-radius:50%;
+  background:var(--navy); border:3px solid var(--card); box-shadow:0 1px 4px rgba(0,0,0,.4);
+}
+.help{margin:4px 0 0; font-size:12px; color:var(--mute)}
+
+.msg{
+  margin:0; padding:10px 14px; border-radius:12px;
+  background:var(--info-bg); border:2px solid var(--info-line); color:var(--info-ink);
+  font-weight:800; font-size:clamp(12px,3.6vw,16px);
+}
+.msg.err{color:var(--warn); border-color:var(--warn)}
+.note{
+  margin:8px 0 0; padding:6px 10px; border-radius:10px; background:var(--field); text-align:center;
+  font-size:12px; color:var(--ink);
+}
+
+.fq-big{text-align:center; font-weight:800; font-size:clamp(28px,8.4vw,38px); line-height:1.1; letter-spacing:.02em; font-variant-numeric:tabular-nums}
+.fq-big small{font-size:.42em; color:var(--mute); margin-left:6px; letter-spacing:0}
+.bar{position:relative; display:flex; height:24px; margin-top:6px; border:2px solid var(--rule); border-radius:8px; overflow:hidden}
+.bar span{display:block; text-align:center; font-weight:700; font-size:13px; line-height:20px; color:var(--mute)}
+.bar span:nth-child(1){flex:30; background:var(--seg1)}
+.bar span:nth-child(2){flex:30; background:var(--seg2); border-left:1px solid var(--rule)}
+.bar span:nth-child(3){flex:40; background:var(--seg3); border-left:1px solid var(--rule)}
+.bar i{position:absolute; top:0; bottom:0; width:4px; margin-left:-2px; background:var(--red)}
+.ticks{position:relative; height:16px; margin-top:3px; font-size:12px; color:var(--mute)}
+.ticks span{position:absolute; top:0; white-space:nowrap; font-variant-numeric:tabular-nums}
+.pair{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
+.box{text-align:center; border:3px solid; border-radius:14px; padding:6px 10px 8px; background:var(--box); min-width:0}
+.box.sony{border-color:var(--red)} .box.ramsa{border-color:var(--blue)}
+.box-t{font-weight:800; font-size:clamp(18px,5.4vw,22px); line-height:1.2}
+.sony .box-t{color:var(--red)} .ramsa .box-t{color:var(--blue)}
+.box-s{font-size:clamp(10px,3vw,12px); white-space:nowrap; color:var(--mute)}
+.box-v{font-weight:800; font-size:clamp(20px,6.2vw,28px); line-height:1.2; white-space:nowrap; font-variant-numeric:tabular-nums}
+.sony .box-v{color:var(--red)} .ramsa .box-v{color:var(--blue)}
+.box-v.none{color:var(--warn); font-size:clamp(16px,5vw,20px); white-space:normal}
+.gtags{display:flex; flex-wrap:wrap; justify-content:center; gap:4px; margin-top:4px}
+.gtag{background:var(--btn); border-radius:999px; padding:1px 10px; font-weight:800; font-size:14px}
+
+.tbl-title{margin:8px 0 6px; font-size:clamp(14px,4vw,16px); font-weight:700; color:var(--mute); flex:none}
+.tbl-wrap{border:2px solid var(--rule); border-radius:12px; overflow:clip}
+table{width:100%; border-collapse:separate; border-spacing:0; text-align:center; font-variant-numeric:tabular-nums}
+th{position:sticky; top:0; z-index:1; background:var(--th); font-weight:800; font-size:14px; padding:6px 4px}
+td{padding:0 4px; height:34px; font-size:14px; border-top:1px solid var(--rule)}
+tbody tr:nth-child(odd) td{background:var(--stripe)}
+td.name{font-weight:800; font-size:16px}
+td.none{color:var(--warn); font-weight:800; font-size:12px; line-height:1.2}
+.tag{display:block; font-size:10px; font-weight:700; color:var(--mute); line-height:1.1}
+
+.foot{margin:2px 2px 0; font-size:11px; line-height:1.35; color:var(--foot); flex:none}
+[hidden]{display:none !important}
+@media (max-height:700px){
+  h1{font-size:clamp(16px,calc((100vw - 24px)/18),24px); margin:10px 0 1.25em}
+  .modes{gap:5px; margin-bottom:6px}
+  .mode{min-height:50px}
+  .help{display:none}
+  .card{margin-bottom:6px; padding:8px 12px 10px}
+  .field{height:38px; font-size:22px}
+  .stepper{font-size:22px}
+  .row{grid-template-columns:38px 38px 1fr}
+  .block{margin-bottom:6px}
+  .fq-big{font-size:clamp(24px,7vw,30px)}
+  .box{padding:4px 10px 6px}
+  .ticks{margin-top:2px}
+  .foot{font-size:10px; line-height:1.3}
+}
+@media (max-height:660px){
+  .mode{min-height:48px}
+  .help{display:none}
+  .card{padding:6px 12px 8px}
+  .block{margin-bottom:4px}
+}
+@media (max-height:640px){
+  h1{margin-bottom:.8em}
+  .mode{min-height:34px}
+  .field{height:36px; font-size:20px}
+  .stepper{font-size:20px}
+  .row{grid-template-columns:36px 36px 1fr}
+  .card{padding:6px 10px 8px; margin-bottom:6px}
+  .fq-big{font-size:24px}
+  .note{margin-top:5px; padding:4px 8px; font-size:11px}
+  .box{padding:4px 8px 6px}
+  .foot{font-size:10px}
+}
+</style>
+</head>
+<body style="background:#d3d4d9">
+<main class="app">
+  <h1 aria-label="1.2GHz帯 SONYとRAMSAの変換">1.2GHz帯 <span class="t-sony">SONY</span><span class="t-arr af" aria-hidden="true">&#xE000;</span><span class="t-ramsa">RAMSA</span>変換</h1>
+
+  <div class="modes" id="modes">
+    <button class="mode" data-mode="s2r" type="button"  aria-label="SONYからRAMSA">SONY<span class="af" aria-hidden="true">&#xE001;</span>RAMSA</button>
+    <button class="mode" data-mode="r2s" type="button"  aria-label="RAMSAからSONY">RAMSA<span class="af" aria-hidden="true">&#xE001;</span>SONY</button>
+    <button class="mode" data-mode="sg" type="button">SONYグループ表</button>
+    <button class="mode" data-mode="rg" type="button">RAMSAグループ表</button>
+    <button class="mode" data-mode="fq" type="button">周波数から検索</button>
+  </div>
+
+  <!-- SONY → RAMSA -->
+  <section class="card" id="p-s2r" hidden>
+    <div class="block">
+      <p class="lbl">バンド</p>
+      <div class="chips cols4" id="s2r-bands"></div>
+    </div>
+    <div class="block">
+      <label class="lbl" for="s2r-ch" id="s2r-ch-lbl">SONYチャンネル（3桁）</label>
+      <div class="row">
+        <button class="stepper" type="button" data-for="s2r-ch" data-d="-1" aria-label="チャンネルを1つ下げる">−</button>
+        <button class="stepper" type="button" data-for="s2r-ch" data-d="1" aria-label="チャンネルを1つ上げる">+</button>
+        <input class="field" id="s2r-ch" inputmode="numeric" autocomplete="off" placeholder="例: 010" aria-describedby="s2r-help">
+        <input type="range" id="s2r-rng" min="10" max="240" step="10" value="10" aria-label="SONYチャンネル">
+      </div>
+      <p class="help" id="s2r-help">「1.2L-025」のように貼り付けても読み取ります。</p>
+    </div>
+  </section>
+
+  <!-- RAMSA → SONY -->
+  <section class="card" id="p-r2s" hidden>
+    <div class="block">
+      <label class="lbl" for="r2s-g">RAMSAグループ（01〜20）</label>
+      <div class="row">
+        <button class="stepper" type="button" data-for="r2s-g" data-d="-1" aria-label="グループを1つ下げる">−</button>
+        <button class="stepper" type="button" data-for="r2s-g" data-d="1" aria-label="グループを1つ上げる">+</button>
+        <input class="field" id="r2s-g" inputmode="numeric" autocomplete="off" placeholder="例: 05">
+        <input type="range" id="r2s-grng" min="1" max="20" step="1" value="1" aria-label="RAMSAグループ">
+      </div>
+    </div>
+    <div class="block">
+      <label class="lbl" for="r2s-c">チャンネル（01〜）</label>
+      <div class="row">
+        <button class="stepper" type="button" data-for="r2s-c" data-d="-1" aria-label="チャンネルを1つ下げる">−</button>
+        <button class="stepper" type="button" data-for="r2s-c" data-d="1" aria-label="チャンネルを1つ上げる">+</button>
+        <input class="field" id="r2s-c" inputmode="numeric" autocomplete="off" placeholder="例: 03">
+        <input type="range" id="r2s-crng" min="1" max="37" step="1" value="1" aria-label="RAMSAチャンネル">
+      </div>
+      <p class="help">「05-03」のように貼り付けても読み取ります。入力すると自動で検索します。</p>
+    </div>
+  </section>
+
+  <!-- SONYグループ表 -->
+  <section class="card tbl" id="p-sg" hidden>
+    <div class="block">
+      <p class="lbl">バンド</p>
+      <div class="chips cols4" id="sg-bands"></div>
+    </div>
+    <div class="block">
+      <p class="lbl">グループ</p>
+      <div class="chips cols4" id="sg-groups"></div>
+    </div>
+    <h2 class="tbl-title" id="sg-title"></h2>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>No</th><th>SONY</th><th>MHz</th><th>RAMSA</th></tr></thead>
+      <tbody id="sg-body"></tbody>
+    </table></div>
+  </section>
+
+  <!-- RAMSAグループ表 -->
+  <section class="card tbl" id="p-rg" hidden>
+    <div class="block">
+      <p class="lbl">グループ</p>
+      <div class="chips cols5" id="rg-groups"></div>
+    </div>
+    <h2 class="tbl-title" id="rg-title"></h2>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>No</th><th>RAMSA</th><th>MHz</th><th>SONY</th></tr></thead>
+      <tbody id="rg-body"></tbody>
+    </table></div>
+  </section>
+
+  <!-- 周波数から検索 -->
+  <section class="card" id="p-fq" hidden>
+    <div class="block">
+      <label class="lbl" for="fq-f">周波数 [MHz]</label>
+      <div class="row">
+        <button class="stepper" type="button" data-for="fq-f" data-d="-1" aria-label="周波数を25kHz下げる">−</button>
+        <button class="stepper" type="button" data-for="fq-f" data-d="1" aria-label="周波数を25kHz上げる">+</button>
+        <input class="field" id="fq-f" inputmode="decimal" autocomplete="off" placeholder="例: 1240.250">
+        <input type="range" id="fq-rng" min="1240000" max="1260000" step="25" value="1240000" aria-label="周波数">
+      </div>
+      <p class="help">1240.000〜1260.000 MHz。小数点以下3桁まで入力すると検索します。</p>
+    </div>
+  </section>
+
+  <!-- 結果 -->
+  <section class="card" id="result-card" hidden>
+    <div id="result" aria-live="polite"></div>
+  </section>
+
+  <p class="foot">データはアップロードされたSONY・RAMSAの1.2GHz帯周波数表を元にしています。本番前に必ず実機の表示・周波数表と照合してください。</p>
+</main>
+
+<script>
+/* ===== データ ===== */
+// RAMSA ワイドバンド グループ01〜20（周波数[kHz] → "グループ-チャンネル"）
+const RAMSA = {"1240150":"01-01","1240175":"02-01","1240200":"03-01","1240225":"04-01","1240250":"05-01","1240275":"06-01","1240300":"07-01","1240325":"08-01","1240350":"09-01","1240375":"10-01","1240400":"11-01","1240425":"12-01","1240450":"13-01","1240475":"14-01","1240500":"15-01","1240525":"16-01","1240550":"17-01","1240575":"18-01","1240600":"19-01","1240625":"20-01","1240650":"01-02","1240675":"02-02","1240700":"03-02","1240725":"04-02","1240750":"05-02","1240775":"06-02","1240800":"07-02","1240825":"08-02","1240850":"09-02","1240875":"10-02","1240900":"11-02","1240925":"12-02","1240950":"13-02","1240975":"14-02","1241000":"15-02","1241025":"16-02","1241050":"17-02","1241075":"18-02","1241100":"19-02","1241125":"20-02","1241150":"01-03","1241175":"02-03","1241200":"03-03","1241225":"04-03","1241250":"05-03","1241275":"06-03","1241300":"07-03","1241325":"08-03","1241350":"09-03","1241375":"10-03","1241400":"11-03","1241425":"12-03","1241450":"13-03","1241475":"14-03","1241500":"15-03","1241525":"16-03","1241550":"17-03","1241575":"18-03","1241600":"19-03","1241625":"20-03","1241650":"01-04","1241675":"02-04","1241700":"03-04","1241725":"04-04","1241750":"05-04","1241775":"06-04","1241800":"07-04","1241825":"08-04","1241850":"09-04","1241875":"10-04","1241900":"11-04","1241925":"12-04","1241950":"13-04","1241975":"14-04","1242000":"15-04","1242025":"16-04","1242050":"17-04","1242075":"18-04","1242100":"19-04","1242125":"20-04","1242150":"01-05","1242175":"02-05","1242200":"03-05","1242225":"04-05","1242250":"05-05","1242275":"06-05","1242300":"07-05","1242325":"08-05","1242350":"09-05","1242375":"10-05","1242400":"11-05","1242425":"12-05","1242450":"13-05","1242475":"14-05","1242500":"15-05","1242525":"16-05","1242550":"17-05","1242575":"18-05","1242600":"19-05","1242625":"20-05","1242650":"01-06","1242675":"02-06","1242700":"03-06","1242725":"04-06","1242750":"05-06","1242775":"06-06","1242800":"07-06","1242825":"08-06","1242850":"09-06","1242875":"10-06","1242900":"11-06","1242925":"12-06","1242950":"13-06","1242975":"14-06","1243000":"15-06","1243025":"16-06","1243050":"17-06","1243075":"18-06","1243100":"19-06","1243125":"20-06","1243150":"01-07","1243175":"02-07","1243200":"03-07","1243225":"04-07","1243250":"05-07","1243275":"06-07","1243300":"07-07","1243325":"08-07","1243350":"09-07","1243375":"10-07","1243400":"11-07","1243425":"12-07","1243450":"13-07","1243475":"14-07","1243500":"15-07","1243525":"16-07","1243550":"17-07","1243575":"18-07","1243600":"19-07","1243625":"20-07","1243650":"01-08","1243675":"02-08","1243700":"03-08","1243725":"04-08","1243750":"05-08","1243775":"06-08","1243800":"07-08","1243825":"08-08","1243850":"09-08","1243875":"10-08","1243900":"11-08","1243925":"12-08","1243950":"13-08","1243975":"14-08","1244000":"15-08","1244025":"16-08","1244050":"17-08","1244075":"18-08","1244100":"19-08","1244125":"20-08","1244150":"01-09","1244175":"02-09","1244200":"03-09","1244225":"04-09","1244250":"05-09","1244275":"06-09","1244300":"07-09","1244325":"08-09","1244350":"09-09","1244375":"10-09","1244400":"11-09","1244425":"12-09","1244450":"13-09","1244475":"14-09","1244500":"15-09","1244525":"16-09","1244550":"17-09","1244575":"18-09","1244600":"19-09","1244625":"20-09","1244650":"01-10","1244675":"02-10","1244700":"03-10","1244725":"04-10","1244750":"05-10","1244775":"06-10","1244800":"07-10","1244825":"08-10","1244850":"09-10","1244875":"10-10","1244900":"11-10","1244925":"12-10","1244950":"13-10","1244975":"14-10","1245000":"15-10","1245025":"16-10","1245050":"17-10","1245075":"18-10","1245100":"19-10","1245125":"20-10","1245150":"01-11","1245175":"02-11","1245200":"03-11","1245225":"04-11","1245250":"05-11","1245275":"06-11","1245300":"07-11","1245325":"08-11","1245350":"09-11","1245375":"10-11","1245400":"11-11","1245425":"12-11","1245450":"13-11","1245475":"14-11","1245500":"15-11","1245525":"16-11","1245550":"17-11","1245575":"18-11","1245600":"19-11","1245625":"20-11","1245650":"01-12","1245675":"02-12","1245700":"03-12","1245725":"04-12","1245750":"05-12","1245775":"06-12","1245800":"07-12","1245825":"08-12","1245850":"09-12","1245875":"10-12","1245900":"11-12","1245925":"12-12","1245950":"13-12","1245975":"14-12","1246000":"15-12","1246025":"16-12","1246050":"17-12","1246075":"18-12","1246100":"19-12","1246125":"20-12","1246150":"01-13","1246175":"02-13","1246200":"03-13","1246225":"04-13","1246250":"05-13","1246275":"06-13","1246300":"07-13","1246325":"08-13","1246350":"09-13","1246375":"10-13","1246400":"11-13","1246425":"12-13","1246450":"13-13","1246475":"14-13","1246500":"15-13","1246525":"16-13","1246550":"17-13","1246575":"18-13","1246600":"19-13","1246625":"20-13","1246650":"01-14","1246675":"02-14","1246700":"03-14","1246725":"04-14","1246750":"05-14","1246775":"06-14","1246800":"07-14","1246825":"08-14","1246850":"09-14","1246875":"10-14","1246900":"11-14","1246925":"12-14","1246950":"13-14","1246975":"14-14","1247000":"15-14","1247025":"16-14","1247050":"17-14","1247075":"18-14","1247100":"19-14","1247125":"20-14","1247150":"01-15","1247175":"02-15","1247200":"03-15","1247225":"04-15","1247250":"05-15","1247275":"06-15","1247300":"07-15","1247325":"08-15","1247350":"09-15","1247375":"10-15","1247400":"11-15","1247425":"12-15","1247450":"13-15","1247475":"14-15","1247500":"15-15","1247525":"16-15","1247550":"17-15","1247575":"18-15","1247600":"19-15","1247625":"20-15","1247650":"01-16","1247675":"02-16","1247700":"03-16","1247725":"04-16","1247750":"05-16","1247775":"06-16","1247800":"07-16","1247825":"08-16","1247850":"09-16","1247875":"10-16","1247900":"11-16","1247925":"12-16","1247950":"13-16","1247975":"14-16","1248000":"15-16","1248025":"16-16","1248050":"17-16","1248075":"18-16","1248100":"19-16","1248125":"20-16","1248150":"01-17","1248175":"02-17","1248200":"03-17","1248225":"04-17","1248250":"05-17","1248275":"06-17","1248300":"07-17","1248325":"08-17","1248350":"09-17","1248375":"10-17","1248400":"11-17","1248425":"12-17","1248450":"13-17","1248475":"14-17","1248500":"15-17","1248525":"16-17","1248550":"17-17","1248575":"18-17","1248600":"19-17","1248625":"20-17","1248650":"01-18","1248675":"02-18","1248700":"03-18","1248725":"04-18","1248750":"05-18","1248775":"06-18","1248800":"07-18","1248825":"08-18","1248850":"09-18","1248875":"10-18","1248900":"11-18","1248925":"12-18","1248950":"13-18","1248975":"14-18","1249000":"15-18","1249025":"16-18","1249050":"17-18","1249075":"18-18","1249100":"19-18","1249125":"20-18","1249150":"01-19","1249175":"02-19","1249200":"03-19","1249225":"04-19","1249250":"05-19","1249275":"06-19","1249300":"07-19","1249325":"08-19","1249350":"09-19","1249375":"10-19","1249400":"11-19","1249425":"12-19","1249450":"13-19","1249475":"14-19","1249500":"15-19","1249525":"16-19","1249550":"17-19","1249575":"18-19","1249600":"19-19","1249625":"20-19","1249650":"01-20","1249675":"02-20","1249700":"03-20","1249725":"04-20","1249750":"05-20","1249775":"06-20","1249800":"07-20","1249825":"08-20","1249850":"09-20","1249875":"10-20","1249900":"11-20","1249925":"12-20","1249950":"13-20","1249975":"14-20","1250000":"15-20","1250025":"16-20","1250050":"17-20","1250075":"18-20","1250100":"19-20","1250125":"20-20","1250150":"01-21","1250175":"02-21","1250200":"03-21","1250225":"04-21","1250250":"05-21","1250275":"06-21","1250300":"07-21","1250325":"08-21","1250350":"09-21","1250375":"10-21","1250400":"11-21","1250425":"12-21","1250450":"13-21","1250475":"14-21","1250500":"15-21","1250525":"16-21","1250550":"17-21","1250575":"18-21","1250600":"19-21","1250625":"20-21","1250650":"01-22","1250675":"02-22","1250700":"03-22","1250725":"04-22","1250750":"05-22","1250775":"06-22","1250800":"07-22","1250825":"08-22","1250850":"09-22","1250875":"10-22","1250900":"11-22","1250925":"12-22","1250950":"13-22","1250975":"14-22","1251000":"15-22","1251025":"16-22","1251050":"17-22","1251075":"18-22","1251100":"19-22","1251125":"20-22","1251150":"01-23","1251175":"02-23","1251200":"03-23","1251225":"04-23","1251250":"05-23","1251275":"06-23","1251300":"07-23","1251325":"08-23","1251350":"09-23","1251375":"10-23","1251400":"11-23","1251425":"12-23","1251450":"13-23","1251475":"14-23","1251500":"15-23","1251525":"16-23","1251550":"17-23","1251575":"18-23","1251600":"19-23","1251625":"20-23","1251650":"01-24","1251675":"02-24","1251700":"03-24","1251725":"04-24","1251750":"05-24","1251775":"06-24","1251800":"07-24","1251825":"08-24","1253175":"09-24","1253200":"10-24","1253225":"11-24","1253250":"12-24","1253275":"13-24","1253300":"14-24","1253325":"15-24","1253350":"16-24","1253375":"17-24","1253400":"18-24","1253425":"19-24","1253450":"20-24","1253475":"01-25","1253500":"02-25","1253525":"03-25","1253550":"04-25","1253575":"05-25","1253600":"06-25","1253625":"07-25","1253650":"08-25","1253675":"09-25","1253700":"10-25","1253725":"11-25","1253750":"12-25","1253775":"13-25","1253800":"14-25","1253825":"15-25","1253850":"16-25","1253875":"17-25","1253900":"18-25","1253925":"19-25","1253950":"20-25","1253975":"01-26","1254000":"02-26","1254025":"03-26","1254050":"04-26","1254075":"05-26","1254100":"06-26","1254125":"07-26","1254150":"08-26","1254175":"09-26","1254200":"10-26","1254225":"11-26","1254250":"12-26","1254275":"13-26","1254300":"14-26","1254325":"15-26","1254350":"16-26","1254375":"17-26","1254400":"18-26","1254425":"19-26","1254450":"20-26","1254475":"01-27","1254500":"02-27","1254525":"03-27","1254550":"04-27","1254575":"05-27","1254600":"06-27","1254625":"07-27","1254650":"08-27","1254675":"09-27","1254700":"10-27","1254725":"11-27","1254750":"12-27","1254775":"13-27","1254800":"14-27","1254825":"15-27","1254850":"16-27","1254875":"17-27","1254900":"18-27","1254925":"19-27","1254950":"20-27","1254975":"01-28","1255000":"02-28","1255025":"03-28","1255050":"04-28","1255075":"05-28","1255100":"06-28","1255125":"07-28","1255150":"08-28","1255175":"09-28","1255200":"10-28","1255225":"11-28","1255250":"12-28","1255275":"13-28","1255300":"14-28","1255325":"15-28","1255350":"16-28","1255375":"17-28","1255400":"18-28","1255425":"19-28","1255450":"20-28","1255475":"01-29","1255500":"02-29","1255525":"03-29","1255550":"04-29","1255575":"05-29","1255600":"06-29","1255625":"07-29","1255650":"08-29","1255675":"09-29","1255700":"10-29","1255725":"11-29","1255750":"12-29","1255775":"13-29","1255800":"14-29","1255825":"15-29","1255850":"16-29","1255875":"17-29","1255900":"18-29","1255925":"19-29","1255950":"20-29","1255975":"01-30","1256000":"02-30","1256025":"03-30","1256050":"04-30","1256075":"05-30","1256100":"06-30","1256125":"07-30","1256150":"08-30","1256175":"09-30","1256200":"10-30","1256225":"11-30","1256250":"12-30","1256275":"13-30","1256300":"14-30","1256325":"15-30","1256350":"16-30","1256375":"17-30","1256400":"18-30","1256425":"19-30","1256450":"20-30","1256475":"01-31","1256500":"02-31","1256525":"03-31","1256550":"04-31","1256575":"05-31","1256600":"06-31","1256625":"07-31","1256650":"08-31","1256675":"09-31","1256700":"10-31","1256725":"11-31","1256750":"12-31","1256775":"13-31","1256800":"14-31","1256825":"15-31","1256850":"16-31","1256875":"17-31","1256900":"18-31","1256925":"19-31","1256950":"20-31","1256975":"01-32","1257000":"02-32","1257025":"03-32","1257050":"04-32","1257075":"05-32","1257100":"06-32","1257125":"07-32","1257150":"08-32","1257175":"09-32","1257200":"10-32","1257225":"11-32","1257250":"12-32","1257275":"13-32","1257300":"14-32","1257325":"15-32","1257350":"16-32","1257375":"17-32","1257400":"18-32","1257425":"19-32","1257450":"20-32","1257475":"01-33","1257500":"02-33","1257525":"03-33","1257550":"04-33","1257575":"05-33","1257600":"06-33","1257625":"07-33","1257650":"08-33","1257675":"09-33","1257700":"10-33","1257725":"11-33","1257750":"12-33","1257775":"13-33","1257800":"14-33","1257825":"15-33","1257850":"16-33","1257875":"17-33","1257900":"18-33","1257925":"19-33","1257950":"20-33","1257975":"01-34","1258000":"02-34","1258025":"03-34","1258050":"04-34","1258075":"05-34","1258100":"06-34","1258125":"07-34","1258150":"08-34","1258175":"09-34","1258200":"10-34","1258225":"11-34","1258250":"12-34","1258275":"13-34","1258300":"14-34","1258325":"15-34","1258350":"16-34","1258375":"17-34","1258400":"18-34","1258425":"19-34","1258450":"20-34","1258475":"01-35","1258500":"02-35","1258525":"03-35","1258550":"04-35","1258575":"05-35","1258600":"06-35","1258625":"07-35","1258650":"08-35","1258675":"09-35","1258700":"10-35","1258725":"11-35","1258750":"12-35","1258775":"13-35","1258800":"14-35","1258825":"15-35","1258850":"16-35","1258875":"17-35","1258900":"18-35","1258925":"19-35","1258950":"20-35","1258975":"01-36","1259000":"02-36","1259025":"03-36","1259050":"04-36","1259075":"05-36","1259100":"06-36","1259125":"07-36","1259150":"08-36","1259175":"09-36","1259200":"10-36","1259225":"11-36","1259250":"12-36","1259275":"13-36","1259300":"14-36","1259325":"15-36","1259350":"16-36","1259375":"17-36","1259400":"18-36","1259425":"19-36","1259450":"20-36","1259475":"01-37","1259500":"02-37","1259525":"03-37","1259550":"04-37","1259575":"05-37","1259600":"06-37","1259625":"07-37","1259650":"08-37","1259675":"09-37","1259700":"10-37","1259725":"11-37","1259750":"12-37","1259775":"13-37","1259800":"14-37","1259825":"15-37","1259850":"16-37"};
+
+// SONY: 周波数[kHz] = BASE + ch * 25
+const BASE = {L:1240000, M:1246000, H:1253000};
+const RANGE = {L:[1,240], M:[1,239], H:[1,279]};
+// 周波数表でグレー表示（デジタルワイヤレスでは使用不可）のチャンネル
+const isGrey = (b,n) => (b==='L'&&n<=5) || (b==='M'&&n>=234) || (b==='H'&&(n<=6||n>=275));
+
+const rng = (a,z,s) => { const r=[]; for(let n=a;n<=z;n+=s) r.push(n); return r; };
+const SONY_GROUPS = {
+  L:[["L-01",rng(5,225,20)],["L-02",rng(15,215,20)],["L-03",rng(10,230,20)],["L-04",rng(20,220,20)]],
+  M:[["M-01",rng(10,230,20)],["M-02",rng(20,220,20)],["M-03",rng(15,215,20)],["M-04",rng(25,225,20)]],
+  H:[["H-01",rng(10,270,20)],["H-02",rng(20,260,20)],["H-03",rng(15,275,20)],["H-04",rng(25,265,20)]]
+};
+
+/* ===== 変換ロジック ===== */
+const pad = (n,w) => String(n).padStart(w,'0');
+const sonyName = (b,n) => `1.2${b}-${pad(n,3)}`;
+const freqOf = (b,n) => BASE[b] + n*25;
+const fmt = k => (k/1000).toFixed(3);
+
+function sonyFromFreq(k){
+  for (const b of ['L','M','H']){
+    const d = k - BASE[b];
+    if (d % 25 === 0){
+      const n = d/25;
+      if (n >= RANGE[b][0] && n <= RANGE[b][1]) return {b, n};
+    }
+  }
+  return null;
+}
+const ramsaFromFreq = k => RAMSA[k] || null;
+
+// RAMSA グループごとのチャンネル→周波数
+const RF = {}; const GCOUNT = {};
+for (const [k,v] of Object.entries(RAMSA)){
+  const [g,c] = v.split('-').map(Number);
+  (RF[g] = RF[g] || {})[c] = Number(k);
+  GCOUNT[g] = Math.max(GCOUNT[g]||0, c);
+}
+const MAX_CH = Math.max(...Object.values(GCOUNT));
+
+function groupLabel(chs){
+  const gaps = chs.slice(1).map((n,i)=> (n-chs[i])*25);
+  const min = Math.min(...gaps);
+  const same = gaps.every(x=>x===min);
+  return `${same ? min+'kHz間隔' : '最小間隔 '+min+'kHz'} / ${chs.length}ch`;
+}
+
+/* ===== 画面 ===== */
+const $ = s => document.querySelector(s);
+const state = {mode:'s2r', band:'L', sgBand:'L', sgGroup:'L-03', rgGroup:1};
+
+function chipButtons(box, items, current, onPick){
+  box.innerHTML = '';
+  for (const it of items){
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip';
+    b.textContent = it.label;
+    b.setAttribute('aria-pressed', String(it.value === current));
+    b.addEventListener('click', () => onPick(it.value));
+    box.appendChild(b);
+  }
+}
+
+function showResult(html, hasCard=true){
+  $('#result-card').hidden = !hasCard;
+  $('#result').innerHTML = html;
+}
+const msg = (t, err=false) => `<p class="msg${err?' err':''}">${t}</p>`;
+function resBlock(label, main, subs, none=false){
+  return `<div class="res"><div class="res-label">${label}</div>` +
+    `<div class="res-main${none?' none':''}">${main}</div>` +
+    subs.map(s=>`<div class="res-sub">${s}</div>`).join('') + `</div>`;
+}
+
+function foundHTML(k){
+  const s = sonyFromFreq(k), r = ramsaFromFreq(k);
+  const pos = ((k-1240000)/20000*100).toFixed(2);
+  const tags = s ? SONY_GROUPS[s.b].filter(g=>g[1].includes(s.n)).map(g=>`<span class="gtag">${g[0]}</span>`).join('') : '';
+  return `<div class="fq-big">${fmt(k)}<small>MHz</small></div>` +
+    `<div class="bar"><span>1.2L</span><span>1.2M</span><span>1.2H</span><i style="left:${pos}%"></i></div>` +
+    `<div class="ticks"><span style="left:0">1240</span><span style="left:30%;transform:translateX(-50%)">1246</span>` +
+    `<span style="left:60%;transform:translateX(-50%)">1252</span><span style="right:0">1260 MHz</span></div>` +
+    `<div class="pair">` +
+    `<div class="box sony"><div class="box-t">SONY</div>` +
+      (s ? `<div class="box-v">${sonyName(s.b,s.n)}</div>${tags?`<div class="gtags">${tags}</div>`:''}`
+         : `<div class="box-v none">割当なし</div>`) + `</div>` +
+    `<div class="box ramsa"><div class="box-t">RAMSA</div><div class="box-s">グループ/チャンネル</div>` +
+      (r ? `<div class="box-v">${r}</div>` : `<div class="box-v none">割当なし</div>`) + `</div>` +
+    `</div>`;
+}
+function setMode(m){
+  state.mode = m;
+  document.querySelectorAll('.mode').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode===m)));
+  for (const id of ['s2r','r2s','sg','rg','fq']) $('#p-'+id).hidden = (id!==m);
+  render();
+}
+
+function render(){
+  ({s2r:renderS2R, r2s:renderR2S, sg:renderSG, rg:renderRG, fq:renderFQ})[state.mode]();
+}
+
+/* --- SONY → RAMSA --- */
+function renderS2R(){
+  chipButtons($('#s2r-bands'), ['L','M','H'].map(b=>({label:'1.2'+b, value:b})), state.band, b=>{
+    state.band = b; renderS2R();
+  });
+  const [lo,hi] = RANGE[state.band];
+  const rg = $('#s2r-rng'); rg.min = 10; rg.max = Math.floor(hi/10)*10; rg.step = 10;
+  const raw = $('#s2r-ch').value;
+  const n = parseInt(raw,10);
+  rg.value = isNaN(n) ? 10 : Math.min(Number(rg.max), Math.max(10, Math.round(n/10)*10));
+  if (raw === '') return showResult(msg('チャンネルを入力してください。'));
+  if (isNaN(n) || n < lo || n > hi)
+    return showResult(msg(`1.2${state.band} のチャンネルは ${pad(lo,3)}〜${pad(hi,3)} です。`, true));
+  const b = state.band, k = freqOf(b,n);
+  showResult(foundHTML(k));
+}
+
+/* --- RAMSA → SONY --- */
+function renderR2S(){
+  const gRaw = $('#r2s-g').value, cRaw = $('#r2s-c').value;
+  const g = parseInt(gRaw,10), c = parseInt(cRaw,10);
+  const gOk = !isNaN(g) && g>=1 && g<=20;
+  const max = gOk ? GCOUNT[g] : MAX_CH;
+  const crg = $('#r2s-crng'); crg.max = max;
+  $('#r2s-grng').value = gOk ? g : 1;
+  crg.value = isNaN(c) ? 1 : Math.min(max, Math.max(1, c));
+  if (gRaw==='' && cRaw==='') return showResult(msg('グループとチャンネルを入力してください。'));
+  if (gRaw==='' || cRaw==='') return showResult(msg(gRaw==='' ? 'グループを入力してください。' : 'チャンネルを入力してください。'));
+  if (!gOk) return showResult(msg('グループは 01〜20 です。', true));
+  if (isNaN(c) || c<1 || c>max) return showResult(msg(`グループ ${pad(g,2)} のチャンネルは 01〜${pad(max,2)} です。`, true));
+  const k = RF[g][c], s = sonyFromFreq(k);
+  showResult(foundHTML(k));
+}
+
+/* --- SONYグループ表 --- */
+function renderSG(){
+  chipButtons($('#sg-bands'), ['L','M','H'].map(b=>({label:'1.2'+b, value:b})), state.sgBand, b=>{
+    state.sgBand = b; state.sgGroup = SONY_GROUPS[b][0][0]; renderSG();
+  });
+  const groups = SONY_GROUPS[state.sgBand];
+  if (!groups.some(g=>g[0]===state.sgGroup)) state.sgGroup = groups[0][0];
+  chipButtons($('#sg-groups'), groups.map(g=>({label:g[0], value:g[0]})), state.sgGroup, v=>{
+    state.sgGroup = v; renderSG();
+  });
+  const [name, chs] = groups.find(g=>g[0]===state.sgGroup);
+  $('#sg-title').textContent = `1.2${state.sgBand} ${name} ${groupLabel(chs)}`;
+  $('#sg-body').innerHTML = chs.map((n,i)=>{
+    const k = freqOf(state.sgBand,n), r = ramsaFromFreq(k);
+    const grey = isGrey(state.sgBand,n);
+    return `<tr><td>${i+1}</td>` +
+      `<td class="name">${sonyName(state.sgBand,n)}${grey?'<span class="tag">デジタル使用不可</span>':''}</td>` +
+      `<td>${fmt(k)}</td>` +
+      (r ? `<td class="name">${r}</td>` : `<td class="none">RAMSA割当<br>なし</td>`) + `</tr>`;
+  }).join('');
+  showResult('', false);
+}
+
+/* --- RAMSAグループ表 --- */
+function renderRG(){
+  chipButtons($('#rg-groups'), rng(1,20,1).map(g=>({label:pad(g,2), value:g})), state.rgGroup, v=>{
+    state.rgGroup = v; renderRG();
+  });
+  const g = state.rgGroup, n = GCOUNT[g];
+  $('#rg-title').textContent = `グループ ${pad(g,2)} ／ ${n}ch`;
+  let html = '';
+  for (let c=1;c<=n;c++){
+    const k = RF[g][c], s = sonyFromFreq(k);
+    html += `<tr><td>${c}</td><td class="name">${pad(g,2)}-${pad(c,2)}</td><td>${fmt(k)}</td>` +
+      (s ? `<td class="name">${sonyName(s.b,s.n)}</td>` : `<td class="none">SONY割当<br>なし</td>`) + `</tr>`;
+  }
+  $('#rg-body').innerHTML = html;
+  showResult('', false);
+}
+
+/* --- 周波数から検索 --- */
+function renderFQ(){
+  const raw = $('#fq-f').value.trim();
+  const v = parseFloat(raw);
+  $('#fq-rng').value = isNaN(v) ? 1240000 : Math.min(1260000, Math.max(1240000, Math.round(v*1000)));
+  if (raw === '') return showResult(msg('周波数を入力してください。'));
+  if (!/^\d{4}\.\d{3}$/.test(raw)) return showResult(msg('小数点以下3桁まで入力してください。（例: 1240.250）'));
+  const k = Math.round(v*1000);
+  if (k < 1240000 || k > 1260000) return showResult(msg('1240.000〜1260.000 MHz の範囲で入力してください。', true));
+  if (k % 25 !== 0) return showResult(msg('25kHz刻みの周波数を入力してください。（例: 1240.250）', true));
+  const s = sonyFromFreq(k);
+  showResult(foundHTML(k));
+}
+
+/* ===== 入力まわり ===== */
+const digits = (s,len) => s.replace(/\D/g,'').slice(0,len);
+const PAIR = /^\s*(\d{1,2})\s*[-－ー–—\/／・.]\s*(\d{1,2})\s*$/;
+const SONYPASTE = /1\.?2\s*([LMHlmh])\s*[-－ー–—\s]?\s*(\d{1,3})/;
+
+$('#s2r-ch').addEventListener('input', e => {
+  const m = e.target.value.match(SONYPASTE);
+  if (m){ state.band = m[1].toUpperCase(); e.target.value = pad(parseInt(m[2],10),3); }
+  else e.target.value = digits(e.target.value,3);
+  renderS2R();
+});
+$('#s2r-rng').addEventListener('input', e => { $('#s2r-ch').value = pad(e.target.value,3); renderS2R(); });
+
+function r2sInput(e){
+  const m = e.target.value.match(PAIR);
+  if (m){ $('#r2s-g').value = pad(parseInt(m[1],10),2); $('#r2s-c').value = pad(parseInt(m[2],10),2); }
+  else e.target.value = digits(e.target.value,2);
+  renderR2S();
+}
+$('#r2s-g').addEventListener('input', r2sInput);
+$('#r2s-c').addEventListener('input', r2sInput);
+$('#r2s-grng').addEventListener('input', e => { $('#r2s-g').value = pad(e.target.value,2); renderR2S(); });
+$('#r2s-crng').addEventListener('input', e => { $('#r2s-c').value = pad(e.target.value,2); renderR2S(); });
+
+$('#fq-f').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/[^\d.]/g,'').replace(/(\..*)\./g,'$1').slice(0,9);
+  renderFQ();
+});
+$('#fq-rng').addEventListener('input', e => { $('#fq-f').value = fmt(Number(e.target.value)); renderFQ(); });
+
+// −／＋ ボタン
+document.querySelectorAll('.stepper').forEach(btn => btn.addEventListener('click', () => {
+  const id = btn.dataset.for, d = Number(btn.dataset.d);
+  const el = document.getElementById(id);
+  if (id === 's2r-ch'){
+    const [lo,hi] = RANGE[state.band], n = parseInt(el.value,10);
+    el.value = pad(isNaN(n) ? lo : Math.min(hi, Math.max(lo, n+d)), 3); renderS2R();
+  } else if (id === 'r2s-g'){
+    const n = parseInt(el.value,10);
+    el.value = pad(isNaN(n) ? 1 : Math.min(20, Math.max(1, n+d)), 2); renderR2S();
+  } else if (id === 'r2s-c'){
+    const g = parseInt($('#r2s-g').value,10), max = (g>=1&&g<=20) ? GCOUNT[g] : MAX_CH;
+    const n = parseInt(el.value,10);
+    el.value = pad(isNaN(n) ? 1 : Math.min(max, Math.max(1, n+d)), 2); renderR2S();
+  } else if (id === 'fq-f'){
+    const v = parseFloat(el.value);
+    const k = isNaN(v) ? 1240000 : Math.round(v*1000);
+    const next = Math.min(1260000, Math.max(1240000, (Math.round(k/25)+ (isNaN(v)?0:d))*25));
+    el.value = fmt(next); renderFQ();
+  }
+}));
+
+document.querySelectorAll('.mode').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+
+setMode('s2r');
+</script>
+</body>
+</html>
