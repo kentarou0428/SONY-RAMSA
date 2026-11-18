@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light" />
+<link rel="icon" href="data:," />
+<title>1.2GHz SONY↔︎RAMSA変換</title>
+<style>
+  :root{
+    color-scheme:light;
+    /* Claude版フォーマット：薄いグレーの地に白いカード、SONYは赤 #c0341d、RAMSAは濃紺 #1e3a8a */
+    --bg:#d8dade; --surface:#ffffff; --input-bg:#f2f3f5;
+    --ink:#1f2326; --ink2:#68707a;
+    --line:#d5d8db; --line-strong:#b9bec4;
+    --accent:#1e3a8a; --accent-ink:#ffffff;
+    --sony:#cf1a1a; --ramsa:#1e3a8a;
+    --chip:#eceef0;
+    --warn:#1e3a8a; --warnbg:#e6ecfa;
+    --err:#b42318; --errbg:#fde8e6;
+    --radius:12px;
+    --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;font-variant-numeric:tabular-nums}
+  html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+  body{margin:0;background:var(--bg);color:var(--ink);touch-action:manipulation;
+    font-family:var(--font);
+    font-size:15px;line-height:1.6;font-variant-numeric:tabular-nums}
+  button,input{font-family:inherit;font-variant-numeric:tabular-nums}
+  .wrap{max-width:640px;margin:0 auto;padding:16px 14px 40px}
+  /* タイトル：スマホでも各行が折り返して3行にならないよう、文字サイズを画面幅に連動させる */
+  h1{font-size:clamp(18px,5.6vw,26px);font-weight:700;line-height:1.35;margin:2px 0 10px;text-align:center}
+  h1>span{display:block;white-space:nowrap}
+  /* デザイン案4：SONYは赤、RAMSAは濃紺、矢印は太い黒で目立たせる */
+  h1 .t-sony{color:var(--sony);font-weight:800}
+  h1 .t-ramsa{color:var(--ramsa);font-weight:800}
+  h1 .t-arrow{display:inline-block;color:#000;font-weight:900;font-size:1.32em;line-height:1;vertical-align:-.07em;margin:0 .05em;transform:scaleX(1.18);-webkit-text-stroke:.6px #000;text-shadow:0 0 0 #000}
+  .sub{color:var(--ink2);font-size:13.5px;margin:0 0 14px}
+  .num{font-variant-numeric:tabular-nums;letter-spacing:.02em}
+
+  /* tabs：5モード。広い幅では1行、狭い幅では2列に折り返す */
+  .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+  @media (max-width:560px){.tabs{grid-template-columns:repeat(2,1fr)}}
+  .tab{appearance:none;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);
+    border-radius:10px;padding:14px 4px;font-size:15px;font-weight:700;cursor:pointer;min-height:56px;line-height:1.3;
+    box-shadow:0 2px 5px rgba(31,35,38,.18),0 1px 2px rgba(31,35,38,.10);
+    transition:transform .07s ease,box-shadow .07s ease,filter .07s ease,background-color .07s ease;touch-action:manipulation}
+  .tab[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .tab:active{transform:translateY(2px);filter:brightness(.88);
+    box-shadow:0 0 0 rgba(31,35,38,0),inset 0 2px 6px rgba(31,35,38,.28)}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 14px;box-shadow:0 1px 3px rgba(31,35,38,.08)}
+  .hidden{display:none!important}
+
+  .lbl{display:block;font-size:13px;font-weight:700;color:var(--ink2);margin:14px 0 6px}
+  .lbl:first-child{margin-top:0}
+  .hint{font-size:12.5px;color:var(--ink2);margin:8px 0 0}
+  input[type="text"]{
+    width:100%;font-size:20px;font-weight:800;text-align:center;padding:10px 12px;
+    border:1.5px solid var(--line-strong);border-radius:10px;
+    background:var(--input-bg);color:var(--ink);min-height:52px;letter-spacing:.05em}
+  input::placeholder{color:var(--ink2);opacity:.7;font-weight:700}
+  input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  /* 入力欄の左側に −／＋ ステッパーをまとめ、スライダーの行まで下に伸ばして空きを埋める */
+  .ctrl{display:grid;grid-template-columns:52px 52px 1fr;gap:8px;align-items:stretch}
+  .ctrl-main{display:flex;flex-direction:column;min-width:0}
+  .ctrl-main input[type="text"]{min-width:0}
+  .stepper{appearance:none;border:1.5px solid var(--line-strong);background:var(--chip);color:var(--ink);
+    border-radius:10px;font-size:22px;font-weight:700;min-height:52px;height:100%;cursor:pointer;padding:0;line-height:1;
+    box-shadow:0 2px 5px rgba(31,35,38,.18),0 1px 2px rgba(31,35,38,.10);
+    transition:transform .07s ease,box-shadow .07s ease,background-color .07s ease,border-color .07s ease,color .07s ease;touch-action:manipulation}
+  .stepper:active{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
+    transform:translateY(2px);
+    box-shadow:0 0 0 rgba(31,35,38,0),inset 0 3px 7px rgba(0,0,0,.35)}
+
+  /* スライドバー：入力欄の下に置き、長さは入力欄に合わせる。左の空きはステッパーが埋める */
+  input[type="range"].slider{display:block;width:100%;margin:10px 0 0;padding:6px 0;
+    -webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;height:32px}
+  input[type="range"].slider::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--line-strong)}
+  input[type="range"].slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:26px;height:26px;margin-top:-10px;
+    border-radius:50%;background:var(--accent);border:2px solid #fff;box-shadow:0 1px 4px rgba(31,35,38,.35)}
+  input[type="range"].slider::-moz-range-track{height:6px;border-radius:3px;background:var(--line-strong)}
+  input[type="range"].slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;
+    background:var(--accent);border:2px solid #fff;box-shadow:0 1px 4px rgba(31,35,38,.35)}
+  input[type="range"].slider:focus{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+  input[type="range"].slider:active::-webkit-slider-thumb{transform:scale(1.18);box-shadow:0 2px 7px rgba(31,35,38,.45)}
+  input[type="range"].slider:active::-moz-range-thumb{transform:scale(1.18);box-shadow:0 2px 7px rgba(31,35,38,.45)}
+
+  /* バンド／グループのチップ */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{appearance:none;border:1px solid var(--line-strong);background:var(--chip);color:var(--ink);
+    border-radius:10px;padding:9px 14px;font-size:13.5px;font-weight:700;cursor:pointer;min-height:44px;letter-spacing:.03em;
+    box-shadow:0 2px 5px rgba(31,35,38,.18),0 1px 2px rgba(31,35,38,.10);
+    transition:transform .07s ease,box-shadow .07s ease,filter .07s ease,background-color .07s ease;touch-action:manipulation}
+  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .chip:active{transform:translateY(2px);filter:brightness(.88);
+    box-shadow:0 0 0 rgba(31,35,38,0),inset 0 2px 6px rgba(31,35,38,.28)}
+  .gchips{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+  .gchips .chip{padding:9px 2px;text-align:center}
+  @media (max-width:480px){.gchips{grid-template-columns:repeat(5,1fr)}}
+
+  /* result */
+  .result{margin-top:16px}
+  .result:empty{margin-top:0}
+  /* スライドバーの下で分割：結果は入力カードとは別の白いカードとして表示する */
+  .result-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 14px;box-shadow:0 1px 3px rgba(31,35,38,.08);margin-top:14px}
+  .result-card:empty{display:none}
+  .freq{font-size:28px;font-weight:800;line-height:1.2;color:var(--ink);letter-spacing:.02em;text-align:center}
+  .freq small{font-size:15px;font-weight:700;color:var(--ink2);margin-left:4px}
+  /* バンド位置バー：1240〜1260MHz を L(1240-1246)／M(1246-1252)／H(1252-1260) の3区画で表示し、現在位置に赤いマーカー */
+  .bandbar{position:relative;height:18px;border:1px solid var(--line-strong);border-radius:5px;overflow:hidden;display:flex;margin-top:10px;background:#fff}
+  .bandbar .seg{height:100%;font-size:10.5px;font-weight:700;color:#59616b;display:flex;align-items:center;justify-content:center}
+  .bandbar .seg.l{width:30%;background:#e8ebef}
+  .bandbar .seg.m{width:30%;background:#dde2e9;border-left:1px solid var(--line-strong)}
+  .bandbar .seg.h{width:40%;background:#d0d8e4;border-left:1px solid var(--line-strong)}
+  .bandbar .marker{position:absolute;top:0;bottom:0;width:3px;background:var(--sony);transform:translateX(-1.5px)}
+  .bandscale{position:relative;height:20px;font-size:11.5px;color:var(--ink2);margin-top:2px}
+  .bandscale span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+  .bandscale span:first-child{transform:none}
+  .bandscale span:last-child{transform:translateX(-100%)}
+  /* 結果カードはスマホでも左右2枚並び（パターンA：1画面に収めるため縦積みにしない） */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .rcard{border:1px solid var(--line);background:#f7f8f9;border-radius:10px;padding:12px 14px;min-height:104px}
+  .rcard.sony{border:3px solid var(--sony)}
+  .rcard.ramsa{border:3px solid var(--ramsa)}
+  .rcard .rk{font-size:22px;font-weight:800;letter-spacing:.02em;line-height:1.25}
+  .rcard.sony .rk{color:var(--sony)}
+  .rcard.ramsa .rk{color:var(--ramsa)}
+  .rcard .rk2{font-size:12px;color:var(--ink2);margin-top:2px}
+  .rcard .big{font-size:26px;font-weight:800;line-height:1.25;letter-spacing:.02em;margin-top:2px}
+  .rcard.sony .big{color:var(--sony)}
+  .rcard.ramsa .big{color:var(--ramsa)}
+  .rcard .big.none{font-size:16px;color:var(--err)}
+  .rcard .note2{font-size:12.5px;color:var(--ink2);margin-top:4px}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tag{background:var(--chip);border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--ink)}
+  .notice{border:1px solid #c3d2f2;background:var(--warnbg);color:var(--warn);
+    border-radius:10px;padding:12px 14px;font-size:14px;font-weight:600}
+  .err{border:1px solid #f0b8b2;background:var(--errbg);color:var(--err);
+    border-radius:10px;padding:12px 14px;font-size:14px;font-weight:600}
+
+  /* グループ表：CSSグリッドの行で組み、列幅を常に枠いっぱいに確定させる */
+  .count-line{font-size:13.5px;color:var(--ink2);margin:14px 0 8px;font-weight:600}
+  .tbl-wrap{overflow:hidden;border:1px solid var(--line-strong);border-radius:10px;background:#fff}
+  .tgrid{font-size:14.5px}
+  .tgrid .tr{display:grid;align-items:stretch;border-bottom:1px solid var(--line)}
+  .tgrid .tr:last-child{border-bottom:0}
+  .tgrid .tr:nth-child(even){background:#f4f5f6}
+  .tgrid .th,.tgrid .td{padding:8px 8px;text-align:center;min-width:0;display:flex;align-items:center;justify-content:center}
+  .tgrid .td{white-space:nowrap;font-weight:700}
+  .tgrid .td.freq-col{font-weight:400}
+  .tgrid .td.no-col{font-weight:400}
+  .tgrid .th{background:var(--chip);font-size:12px;color:var(--ink);font-weight:700;line-height:1.35}
+  .tgrid .td.sony-col{font-weight:700}
+  .tgrid-s2r .tr{grid-template-columns:15% 1fr 1fr 1fr}
+  .tgrid-r2s .tr{grid-template-columns:15% 1fr 1fr 1fr}
+  @media (max-width:480px){
+    .tgrid{font-size:13px}
+    .tgrid .th,.tgrid .td{padding:7px 4px}
+  }
+  .tgrid .none-note{white-space:normal;line-height:1.3;font-size:13px;color:var(--err);font-weight:600}
+
+  footer{margin-top:16px;color:var(--ink2);font-size:12.5px;line-height:1.6}
+
+  /* スマホ最適化：グループ表以外は一般的なiPhone（390×844、SE系の375×667でも）
+     1画面にスクロールなしで収まるよう、余白・文字・部品を詰める。
+     タブの配置は元のまま（狭い幅では2列に折り返す）で、タブ以外の部分で高さを吸収する。
+     要素は減らさず、結果表示時（周波数＋バンドバー＋2枚カード）でも収まる高さにする */
+  @media (max-width:560px){
+    .wrap{padding:8px 10px 14px}
+    h1{font-size:clamp(17px,5.2vw,20px);line-height:1.3;margin:0 0 6px}
+    .tabs{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+    .panel{padding:10px}
+    .lbl{font-size:12px;margin:6px 0 3px;line-height:1.4}
+    .hint{font-size:11px;margin:4px 0 0;line-height:1.45}
+    .chip{min-height:34px;padding:6px 11px;font-size:12.5px}
+    .gchips{gap:6px}
+    .gchips .chip{padding:6px 2px}
+    input[type="text"]{font-size:18px;min-height:40px;padding:7px 10px}
+    .ctrl{grid-template-columns:40px 40px 1fr;gap:6px}
+    .stepper{min-height:40px;font-size:19px}
+    input[type="range"].slider{height:20px;width:100%;margin:6px 0 0;padding:3px 0}
+    input[type="range"].slider::-webkit-slider-thumb{width:22px;height:22px;margin-top:-8px}
+    input[type="range"].slider::-moz-range-thumb{width:18px;height:18px}
+    .result-card{padding:10px;margin-top:8px}
+    .freq{font-size:22px}
+    .freq small{font-size:13px}
+    .bandbar{height:14px;margin-top:6px}
+    .bandscale{height:16px;font-size:10.5px}
+    .grid2{gap:8px;margin-top:8px}
+    .rcard{padding:8px 10px;min-height:0}
+    .rcard .rk{font-size:17px}
+    .rcard .rk2{font-size:11px}
+    .rcard .big{font-size:20px}
+    .rcard .big.none{font-size:13.5px}
+    .rcard .note2{font-size:11px}
+    .tags{margin-top:5px;gap:5px}
+    .tag{font-size:11px;padding:2px 8px}
+    .notice,.err{padding:8px 11px;font-size:13px}
+    .count-line{margin:10px 0 6px}
+    footer{margin-top:8px;font-size:11px;line-height:1.5}
+  }
+  /* 背の低いiPhone（SE系など、縦700px以下）ではさらに一段詰める */
+  @media (max-width:560px) and (max-height:700px){
+    .tabs{margin-bottom:8px}
+    .panel{padding:8px 10px}
+    .result-card{padding:8px 10px}
+    input[type="text"]{min-height:38px}
+    .stepper{min-height:38px}
+    input[type="range"].slider{height:18px;margin-top:4px}
+    .bandbar{margin-top:4px}
+    .grid2{margin-top:6px}
+    .freq{font-size:20px}
+    .rcard .big{font-size:18px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span>1.2GHz <span class="t-sony">SONY</span><span class="t-arrow" aria-hidden="true">↔</span><span class="t-ramsa">RAMSA</span>変換</span></h1>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-mode="s2r">SONY → RAMSA</button>
+    <button class="tab" role="tab" aria-selected="false" data-mode="r2s">RAMSA → SONY</button>
+    <button class="tab" role="tab" aria-selected="false" data-mode="stable">SONYグループ表</button>
+    <button class="tab" role="tab" aria-selected="false" data-mode="rtable">RAMSAグループ表</button>
+    <button class="tab" role="tab" aria-selected="false" data-mode="freq">周波数から検索</button>
+  </div>
+
+  <!-- ===== SONY → RAMSA ===== -->
+  <section id="panel-s2r">
+    <div class="panel">
+    <span class="lbl">バンド</span>
+    <div class="chips" id="bandSeg1">
+      <button type="button" class="chip" data-band="L" aria-pressed="true">1.2L</button>
+      <button type="button" class="chip" data-band="M" aria-pressed="false">1.2M</button>
+      <button type="button" class="chip" data-band="H" aria-pressed="false">1.2H</button>
+    </div>
+    <label class="lbl" for="chNum">SONYチャンネル（3桁）</label>
+    <div class="ctrl">
+      <button type="button" class="stepper" id="chMinus" aria-label="チャンネルを1下げる">−</button>
+      <button type="button" class="stepper" id="chPlus" aria-label="チャンネルを1上げる">＋</button>
+      <div class="ctrl-main">
+        <input type="text" id="chNum" inputmode="numeric" maxlength="3" placeholder="例: 010" autocomplete="off" />
+        <input type="range" class="slider" id="chSlider" min="10" max="240" step="10" value="10" aria-label="SONYチャンネルのスライダー" />
+      </div>
+    </div>
+    </div>
+    <div class="result result-card" id="resultS2R" aria-live="polite"></div>
+  </section>
+
+  <!-- ===== RAMSA → SONY ===== -->
+  <section class="hidden" id="panel-r2s">
+    <div class="panel">
+    <label class="lbl" for="ramsaGr">RAMSAグループ（01〜20）</label>
+    <div class="ctrl">
+      <button type="button" class="stepper" id="grMinus" aria-label="グループを1下げる">−</button>
+      <button type="button" class="stepper" id="grPlus" aria-label="グループを1上げる">＋</button>
+      <div class="ctrl-main">
+        <input type="text" id="ramsaGr" inputmode="numeric" maxlength="5" placeholder="例: 05" autocomplete="off" />
+        <input type="range" class="slider" id="grSlider" min="1" max="20" step="1" value="1" aria-label="RAMSAグループのスライダー" />
+      </div>
+    </div>
+    <label class="lbl" for="ramsaCh">チャンネル（01〜）</label>
+    <div class="ctrl">
+      <button type="button" class="stepper" id="rcMinus" aria-label="チャンネルを1下げる">−</button>
+      <button type="button" class="stepper" id="rcPlus" aria-label="チャンネルを1上げる">＋</button>
+      <div class="ctrl-main">
+        <input type="text" id="ramsaCh" inputmode="numeric" maxlength="2" placeholder="例: 03" autocomplete="off" />
+        <input type="range" class="slider" id="rcSlider" min="1" max="37" step="1" value="1" aria-label="RAMSAチャンネルのスライダー" />
+      </div>
+    </div>
+    </div>
+    <div class="result result-card" id="resultR2S" aria-live="polite"></div>
+  </section>
+
+  <!-- ===== SONYグループ表 ===== -->
+  <section class="panel hidden" id="panel-stable">
+    <span class="lbl">バンド</span>
+    <div class="chips" id="bandSegS">
+      <button type="button" class="chip" data-band="L" aria-pressed="true">1.2L</button>
+      <button type="button" class="chip" data-band="M" aria-pressed="false">1.2M</button>
+      <button type="button" class="chip" data-band="H" aria-pressed="false">1.2H</button>
+    </div>
+    <span class="lbl">グループ</span>
+    <div class="chips" id="sonyGroupChips"></div>
+    <div class="result" id="resultST" aria-live="polite"></div>
+  </section>
+
+  <!-- ===== RAMSAグループ表 ===== -->
+  <section class="panel hidden" id="panel-rtable">
+    <span class="lbl">グループ</span>
+    <div class="gchips" id="ramsaGroupChips"></div>
+    <div class="result" id="resultRT" aria-live="polite"></div>
+  </section>
+
+  <!-- ===== 周波数から検索 ===== -->
+  <section class="hidden" id="panel-freq">
+    <div class="panel">
+    <label class="lbl" for="freqIn">周波数 [MHz]</label>
+    <div class="ctrl">
+      <button type="button" class="stepper" id="freqMinus" aria-label="1つ下の周波数へ">−</button>
+      <button type="button" class="stepper" id="freqPlus" aria-label="1つ上の周波数へ">＋</button>
+      <div class="ctrl-main">
+        <input type="text" id="freqIn" inputmode="decimal" placeholder="例: 1240.250" autocomplete="off" />
+        <input type="range" class="slider" id="freqSlider" min="1240" max="1260" step="0.025" value="1240" aria-label="周波数のスライダー" />
+      </div>
+    </div>
+    <p class="hint">1240.000〜1260.000 MHz。小数点以下3桁まで入力すると検索します。</p>
+    </div>
+    <div class="result result-card" id="resultFreq" aria-live="polite"></div>
+  </section>
+
+  <footer>データはアップロードされたSONY・RAMSAの1.2GHz帯周波数表を元にしています。本番前に必ず実機の表示・周波数表と照合してください。</footer>
+</div>
+
+<script>
+"use strict";
+/* ============ 共通の土台（換算データ・ロジックは照合済みの現行版をそのまま使用） ============ */
+var BANDS = {
+  L: { base: 1240.000, max: 240 },
+  M: { base: 1246.000, max: 240 },
+  H: { base: 1253.000, max: 280 }
+};
+/* RAMSA実用波の範囲（CH番号） */
+var RAMSA_USE = { L: [6, 240], M: [1, 233], H: [7, 274] };
+/* 実用波の通し番号 i（0始まり）の起点：L→M→H の順 */
+var RAMSA_OFFSET = { L: 0, M: 235, H: 468 }; /* L:235波, M:233波 */
+
+function freqOf(band, n){ return BANDS[band].base + n * 0.025; }
+function fmtFreq(f){ return f.toFixed(3); }
+function pad3(n){ return ("00" + n).slice(-3); }
+function pad2(n){ return ("0" + n).slice(-2); }
+function chSony(band, n){ return "1.2" + band + "-" + pad3(n); }
+
+/* RAMSA換算：実用波でなければ null */
+function ramsaOf(band, n){
+  var u = RAMSA_USE[band];
+  if (n < u[0] || n > u[1]) return null;
+  var i = RAMSA_OFFSET[band] + (n - u[0]);
+  return { gr: (i % 20) + 1, ch: Math.floor(i / 20) + 1 };
+}
+/* 通し番号 i → 波（RAMSA→SONY用） */
+function waveFromIndex(i){
+  if (i < 235) return { band: "L", n: 6 + i };
+  if (i < 468) return { band: "M", n: 1 + (i - 235) };
+  return { band: "H", n: 7 + (i - 468) };
+}
+
+/* ============ SONYグループ定義 ============ */
+function range(start, end, step){ var a = []; for (var n = start; n <= end; n += step) a.push(n); return a; }
+var SONY_GROUPS = []; /* {name, band, cat, nums:[...]} cat: 500k/375k/750k/analog */
+function addRange(band, suffix, cat, start, end, step){
+  SONY_GROUPS.push({ name: band + "-" + suffix, band: band, cat: cat, nums: range(start, end, step) });
+}
+["L","M","H"].forEach(function(b){
+  var d500 = { L:{"01":[5,225],"02":[15,215],"03":[10,230],"04":[20,220]},
+               M:{"01":[10,230],"02":[20,220],"03":[15,215],"04":[25,225]},
+               H:{"01":[10,270],"02":[20,260],"03":[15,275],"04":[25,265]} }[b];
+  var d375 = { L:{"11":[10,220],"12":[5,230],"13":[15,225]},
+               M:{"11":[15,225],"12":[10,220],"13":[5,230]},
+               H:{"11":[15,270],"12":[10,265],"13":[20,260]} }[b];
+  var d750 = { L:{"A":[10,220],"B":[25,205],"C":[5,215],"D":[20,230],"E":[15,225],"F":[30,210]},
+               M:{"A":[15,225],"B":[30,210],"C":[10,220],"D":[25,205],"E":[20,230],"F":[5,215]},
+               H:{"A":[15,255],"B":[30,270],"C":[10,250],"D":[25,265],"E":[20,260],"F":[35,245]} }[b];
+  Object.keys(d500).forEach(function(k){ addRange(b, k, "500k", d500[k][0], d500[k][1], 20); });
+  Object.keys(d375).forEach(function(k){ addRange(b, k, "375k", d375[k][0], d375[k][1], 15); });
+  Object.keys(d750).forEach(function(k){ addRange(b, k, "750k", d750[k][0], d750[k][1], 30); });
+});
+var ANALOG = {
+  L: { A01:[10,70,150,175,220], A02:[60,105,140,200], A03:[40,100,125,155,230], A04:[35,85,110,180] },
+  M: { A01:[10,70,150,175,220], A02:[5,60,105,140,200], A03:[40,100,125,155,230], A04:[35,85,110,180] },
+  H: { A01:[65,145,170,215,265], A02:[55,100,135,195,245,260], A03:[35,95,120,150,225,270], A04:[30,80,105,175,230] }
+};
+["L","M","H"].forEach(function(b){
+  Object.keys(ANALOG[b]).forEach(function(k){
+    SONY_GROUPS.push({ name: b + "-" + k, band: b, cat: "analog", nums: ANALOG[b][k].slice() });
+  });
+});
+var CAT_LABEL = { "500k": "500kHz間隔", "375k": "375kHz間隔", "750k": "750kHz間隔", "analog": "アナログ共用" };
+
+/* ある波を含むSONYグループ一覧：表示は各バンドの 01〜04 のみ */
+function sonyGroupsOf(band, n){
+  var out = [];
+  SONY_GROUPS.forEach(function(g){
+    if (g.band === band && /-0[1-4]$/.test(g.name) && g.nums.indexOf(n) !== -1) out.push(g.name);
+  });
+  return out;
+}
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+function fmtRamsa(r){ return pad2(r.gr) + "-" + pad2(r.ch); }
+function noticeHtml(msg){ return '<div class="notice">' + esc(msg) + '</div>'; }
+function errHtml(msg){ return '<div class="err">' + esc(msg) + '</div>'; }
+
+/* ============ 結果表示（周波数＋バンドバー＋SONY/RAMSAカード） ============ */
+function bandBarHtml(band, n){
+  var f = freqOf(band, n);
+  var pct = ((f - 1240) / 20 * 100).toFixed(2);
+  return '<div class="bandbar" aria-hidden="true">'
+    + '<div class="seg l">1.2L</div><div class="seg m">1.2M</div><div class="seg h">1.2H</div>'
+    + '<div class="marker" style="left:' + pct + '%"></div></div>'
+    + '<div class="bandscale" aria-hidden="true"><span style="left:0">1240</span>'
+    + '<span style="left:30%">1246</span><span style="left:60%">1252</span>'
+    + '<span style="left:100%">1260 MHz</span></div>';
+}
+function renderResult(container, band, n){
+  var f = freqOf(band, n), r = ramsaOf(band, n);
+  var groups = sonyGroupsOf(band, n);
+  var html = "";
+  html += '<div class="freq num">' + fmtFreq(f) + '<small>MHz</small></div>';
+  html += bandBarHtml(band, n);
+  html += '<div class="grid2">';
+  /* SONY側もRAMSA側と同じ行構成にし、「グループ/チャンネル」の位置にSONYグループ名を置く。無い時は空欄で高さだけ残し、大文字の位置を左右で揃える */
+  html += '<div class="rcard sony"><div class="rk">SONY</div>'
+        + '<div class="rk2">' + (groups.length ? groups.map(function(g){ return esc(g); }).join(" / ") : "&nbsp;") + '</div>'
+        + '<div class="big num">' + esc(chSony(band, n)) + '</div>';
+  html += '</div>';
+  if (r){
+    html += '<div class="rcard ramsa"><div class="rk">RAMSA</div><div class="rk2">グループ/チャンネル</div>'
+          + '<div class="big num">' + fmtRamsa(r) + '</div></div>';
+  } else {
+    html += '<div class="rcard ramsa"><div class="rk">RAMSA</div><div class="rk2">グループ/チャンネル</div>'
+          + '<div class="big none">RAMSA割当なし</div>'
+          + '<div class="note2">この周波数はRAMSA実用波（736波）の範囲外です</div></div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+/* ============ 押した感触：対応端末（Android等）では短く振動させる。iOSは仕様上無反応 ============ */
+document.addEventListener("pointerdown", function(e){
+  if (e.target.closest && e.target.closest("button") && navigator.vibrate){
+    try { navigator.vibrate(10); } catch (err) {}
+  }
+});
+
+/* ============ タブ切替 ============ */
+var tabs = document.querySelectorAll(".tab");
+tabs.forEach(function(t){
+  t.addEventListener("click", function(){
+    tabs.forEach(function(x){ x.setAttribute("aria-selected", x === t ? "true" : "false"); });
+    ["s2r","r2s","stable","rtable","freq"].forEach(function(m){
+      document.getElementById("panel-" + m).classList.toggle("hidden", t.dataset.mode !== m);
+    });
+  });
+});
+
+/* ============ チップ（バンド）共通 ============ */
+function chipSetup(id, attr, cb){
+  var seg = document.getElementById(id), cur = null;
+  seg.querySelectorAll("button").forEach(function(b){
+    if (b.getAttribute("aria-pressed") === "true") cur = b.dataset[attr];
+    b.addEventListener("click", function(){
+      seg.querySelectorAll("button").forEach(function(x){ x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+      cur = b.dataset[attr]; if (cb) cb(cur);
+    });
+  });
+  return function(){ return cur; };
+}
+
+/* ============ SONY → RAMSA ============ */
+var chInput = document.getElementById("chNum");
+var chSlider = document.getElementById("chSlider");
+var resultS2R = document.getElementById("resultS2R");
+function updateSony(){
+  var band = getBand1(), v = chInput.value.trim();
+  chSlider.max = BANDS[band].max;
+  if (v === ""){ resultS2R.innerHTML = noticeHtml("チャンネルを入力してください。"); return; }
+  var n = parseInt(v, 10);
+  if (isNaN(n) || n < 1 || n > BANDS[band].max){
+    resultS2R.innerHTML = errHtml("1.2" + band + " のチャンネルは 001〜" + BANDS[band].max + " の範囲で入力してください。");
+    return;
+  }
+  chSlider.value = n;
+  renderResult(resultS2R, band, n);
+}
+chSlider.addEventListener("input", function(){
+  chInput.value = pad3(parseInt(chSlider.value, 10));
+  updateSony();
+});
+var getBand1 = chipSetup("bandSeg1", "band", function(){ updateSony(); });
+chInput.addEventListener("input", function(){
+  chInput.value = chInput.value.replace(/\D/g, "").slice(0, 3);
+  updateSony();
+});
+function stepSony(delta){
+  var band = getBand1(), v = chInput.value.trim(), n;
+  if (v === "" || isNaN(parseInt(v, 10))) n = delta > 0 ? 1 : BANDS[band].max;
+  else n = Math.min(BANDS[band].max, Math.max(1, parseInt(v, 10) + delta));
+  chInput.value = pad3(n);
+  updateSony();
+}
+document.getElementById("chMinus").addEventListener("click", function(){ stepSony(-1); });
+document.getElementById("chPlus").addEventListener("click", function(){ stepSony(1); });
+
+/* ============ RAMSA → SONY ============ */
+var grInput = document.getElementById("ramsaGr");
+var rcInput = document.getElementById("ramsaCh");
+var grSlider = document.getElementById("grSlider");
+var rcSlider = document.getElementById("rcSlider");
+var resultR2S = document.getElementById("resultR2S");
+function ramsaIndex(gr, ch){ return (ch - 1) * 20 + (gr - 1); }
+function updateRamsa(){
+  var gv = grInput.value.trim(), cv = rcInput.value.trim();
+  if (gv === "" || cv === ""){ resultR2S.innerHTML = noticeHtml("グループとチャンネルを入力してください。"); return; }
+  var gr = parseInt(gv, 10), ch = parseInt(cv, 10);
+  if (isNaN(gr) || gr < 1 || gr > 20){
+    resultR2S.innerHTML = errHtml("RAMSAグループは 01〜20 の範囲で入力してください。"); return;
+  }
+  if (isNaN(ch) || ch < 1 || ch > 37){
+    resultR2S.innerHTML = errHtml("RAMSAチャンネルは 01〜37 の範囲で入力してください。"); return;
+  }
+  grSlider.value = gr;
+  rcSlider.value = ch;
+  var i = ramsaIndex(gr, ch);
+  if (i < 0 || i >= 736){
+    resultR2S.innerHTML = errHtml("グループ" + pad2(gr) + "／チャンネル" + pad2(ch) + " の組み合わせはRAMSA実用波（736波）の範囲外です。");
+    return;
+  }
+  var w = waveFromIndex(i);
+  renderResult(resultR2S, w.band, w.n);
+}
+grSlider.addEventListener("input", function(){
+  grInput.value = pad2(parseInt(grSlider.value, 10));
+  updateRamsa();
+});
+rcSlider.addEventListener("input", function(){
+  rcInput.value = pad2(parseInt(rcSlider.value, 10));
+  updateRamsa();
+});
+grInput.addEventListener("input", function(){
+  /* 「05-03」の貼り付けをグループとチャンネルに分割する */
+  var m = grInput.value.match(/(\d{1,2})\s*[-−ー]\s*(\d{1,2})/);
+  if (m){
+    grInput.value = m[1];
+    rcInput.value = m[2];
+  } else {
+    grInput.value = grInput.value.replace(/\D/g, "").slice(0, 2);
+  }
+  updateRamsa();
+});
+rcInput.addEventListener("input", function(){
+  rcInput.value = rcInput.value.replace(/\D/g, "").slice(0, 2);
+  updateRamsa();
+});
+function stepRamsaField(which, delta){
+  var el = which === "gr" ? grInput : rcInput;
+  var gr = parseInt(grInput.value, 10), ch = parseInt(rcInput.value, 10);
+  if (el.value.trim() === "" || isNaN(parseInt(el.value, 10))){
+    if (which === "gr") gr = delta > 0 ? 1 : 20; else ch = delta > 0 ? 1 : 37;
+  } else if (which === "gr"){
+    if (isNaN(gr)) gr = 1;
+    var maxGr = (ch === 37) ? 16 : 20;
+    gr = Math.min(maxGr, Math.max(1, gr + delta));
+  } else {
+    if (isNaN(ch)) ch = 1;
+    var maxCh = (gr >= 17) ? 36 : 37;
+    ch = Math.min(maxCh, Math.max(1, ch + delta));
+  }
+  if (!isNaN(gr)) grInput.value = pad2(gr);
+  if (!isNaN(ch)) rcInput.value = pad2(ch);
+  updateRamsa();
+}
+document.getElementById("grMinus").addEventListener("click", function(){ stepRamsaField("gr", -1); });
+document.getElementById("grPlus").addEventListener("click", function(){ stepRamsaField("gr", 1); });
+document.getElementById("rcMinus").addEventListener("click", function(){ stepRamsaField("ch", -1); });
+document.getElementById("rcPlus").addEventListener("click", function(){ stepRamsaField("ch", 1); });
+
+/* ============ SONYグループ表 ============ */
+var sonyGroupChips = document.getElementById("sonyGroupChips");
+var curSonyGroup = "L-03";
+function buildSonyGroupChips(){
+  var band = getBandS();
+  sonyGroupChips.innerHTML = "";
+  SONY_GROUPS.filter(function(g){ return g.band === band; }).slice(0, 4).forEach(function(g){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = g.name;
+    b.setAttribute("aria-pressed", g.name === curSonyGroup ? "true" : "false");
+    b.addEventListener("click", function(){
+      curSonyGroup = g.name;
+      sonyGroupChips.querySelectorAll("button").forEach(function(x){
+        x.setAttribute("aria-pressed", x === b ? "true" : "false");
+      });
+      renderSonyTable();
+    });
+    sonyGroupChips.appendChild(b);
+  });
+}
+function renderSonyTable(){
+  var box = document.getElementById("resultST");
+  var g = SONY_GROUPS.filter(function(x){ return x.name === curSonyGroup; })[0];
+  if (!g){ box.innerHTML = ""; return; }
+  var html = '<p class="count-line">1.2' + g.band + " " + esc(g.name) + " " + CAT_LABEL[g.cat] + " / " + g.nums.length + "ch</p>";
+  html += '<div class="tbl-wrap"><div class="tgrid tgrid-s2r" role="table"><div class="tr" role="row"><div class="th">No</div><div class="th">SONY</div><div class="th">MHz</div><div class="th">RAMSA</div></div>';
+  g.nums.forEach(function(n, idx){
+    var r = ramsaOf(g.band, n);
+    html += '<div class="tr" role="row"><div class="td num no-col">' + (idx + 1) + '</div>'
+      + '<div class="td num sony-col">' + esc(chSony(g.band, n)) + '</div>'
+      + '<div class="td num freq-col">' + fmtFreq(freqOf(g.band, n)) + '</div>'
+      + (r ? '<div class="td num">' + fmtRamsa(r) + '</div>' : '<div class="td none-note">RAMSA割当なし</div>')
+      + '</div>';
+  });
+  html += '</div></div>';
+  box.innerHTML = html;
+}
+var getBandS = chipSetup("bandSegS", "band", function(band){
+  curSonyGroup = band + "-01";
+  buildSonyGroupChips();
+  renderSonyTable();
+});
+
+/* ============ RAMSAグループ表 ============ */
+var ramsaGroupChips = document.getElementById("ramsaGroupChips");
+var curRamsaGroup = 1;
+(function(){
+  range(1, 20, 1).forEach(function(gr){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = pad2(gr);
+    b.setAttribute("aria-pressed", gr === curRamsaGroup ? "true" : "false");
+    b.addEventListener("click", function(){
+      curRamsaGroup = gr;
+      ramsaGroupChips.querySelectorAll("button").forEach(function(x){
+        x.setAttribute("aria-pressed", x === b ? "true" : "false");
+      });
+      renderRamsaTable();
+    });
+    ramsaGroupChips.appendChild(b);
+  });
+})();
+function renderRamsaTable(){
+  var box = document.getElementById("resultRT");
+  var gr = curRamsaGroup, waves = [];
+  for (var i = 0; i < 736; i++){
+    if ((i % 20) + 1 === gr){
+      var w = waveFromIndex(i);
+      w.ch = Math.floor(i / 20) + 1;
+      waves.push(w);
+    }
+  }
+  waves.sort(function(a, b){ return a.ch - b.ch; });
+  var html = '<p class="count-line">グループ ' + pad2(gr) + " ／ " + waves.length + "ch</p>";
+  html += '<div class="tbl-wrap"><div class="tgrid tgrid-r2s" role="table"><div class="tr" role="row"><div class="th">No</div><div class="th">RAMSA</div><div class="th">MHz</div><div class="th">SONY</div></div>';
+  waves.forEach(function(w, idx){
+    html += '<div class="tr" role="row"><div class="td num no-col">' + (idx + 1) + '</div>'
+      + '<div class="td num">' + fmtRamsa({ gr: gr, ch: w.ch }) + '</div>'
+      + '<div class="td num freq-col">' + fmtFreq(freqOf(w.band, w.n)) + '</div>'
+      + '<div class="td num sony-col">' + esc(chSony(w.band, w.n)) + '</div></div>';
+  });
+  html += '</div></div>';
+  box.innerHTML = html;
+}
+
+/* ============ 周波数から検索 ============ */
+var freqInput = document.getElementById("freqIn");
+var freqSlider = document.getElementById("freqSlider");
+var resultFreq = document.getElementById("resultFreq");
+freqSlider.addEventListener("input", function(){
+  freqInput.value = fmtFreq(parseFloat(freqSlider.value));
+  updateFreq();
+});
+freqInput.addEventListener("input", function(e){
+  var digits = freqInput.value.replace(/\D/g, "").slice(0, 7);
+  if (e.inputType && e.inputType.indexOf("delete") === 0){
+    freqInput.value = digits.length > 4 ? digits.slice(0, 4) + "." + digits.slice(4) : digits;
+  } else if (digits.length > 4) freqInput.value = digits.slice(0, 4) + "." + digits.slice(4);
+  else if (digits.length === 4) freqInput.value = digits + ".";
+  else freqInput.value = digits;
+  updateFreq();
+});
+function updateFreq(){
+  var raw = freqInput.value.trim();
+  if (raw === ""){ resultFreq.innerHTML = noticeHtml("周波数を入力してください。"); return; }
+  if (!/^\d{4}\.\d{3}$/.test(raw)){ resultFreq.innerHTML = ""; return; }
+  var f = parseFloat(raw), found = null;
+  ["L","M","H"].forEach(function(b){
+    var n = Math.round((f - BANDS[b].base) / 0.025);
+    if (n >= 1 && n <= BANDS[b].max && Math.abs(freqOf(b, n) - f) < 0.0005) found = { band: b, n: n };
+  });
+  if (!found){
+    resultFreq.innerHTML = errHtml(fmtFreq(f) + " MHz は 1.2GHz帯の25kHzグリッド上にありません（1240.025〜1260.000 MHz、25kHz刻み）。");
+    return;
+  }
+  freqSlider.value = f;
+  renderResult(resultFreq, found.band, found.n);
+}
+/* 実在する周波数の一覧（昇順）：各バンドの 1〜max 波。バンドの境目（1252.000→1253.025）の空白も含めて上下移動できる */
+var FREQ_LIST = [];
+["L","M","H"].forEach(function(b){
+  for (var n = 1; n <= BANDS[b].max; n++) FREQ_LIST.push(freqOf(b, n));
+});
+FREQ_LIST.sort(function(a, b){ return a - b; });
+function stepFreq(delta){
+  var raw = freqInput.value.trim(), f = parseFloat(raw), target = null, i;
+  if (raw === "" || isNaN(f)){
+    target = delta > 0 ? FREQ_LIST[0] : FREQ_LIST[FREQ_LIST.length - 1];
+  } else if (delta > 0){
+    for (i = 0; i < FREQ_LIST.length; i++){ if (FREQ_LIST[i] > f + 0.0005){ target = FREQ_LIST[i]; break; } }
+    if (target === null) target = FREQ_LIST[FREQ_LIST.length - 1];
+  } else {
+    for (i = FREQ_LIST.length - 1; i >= 0; i--){ if (FREQ_LIST[i] < f - 0.0005){ target = FREQ_LIST[i]; break; } }
+    if (target === null) target = FREQ_LIST[0];
+  }
+  freqInput.value = fmtFreq(target);
+  updateFreq();
+}
+document.getElementById("freqMinus").addEventListener("click", function(){ stepFreq(-1); });
+document.getElementById("freqPlus").addEventListener("click", function(){ stepFreq(1); });
+
+/* ============ 初期表示 ============ */
+resultS2R.innerHTML = noticeHtml("チャンネルを入力してください。");
+resultR2S.innerHTML = noticeHtml("グループとチャンネルを入力してください。");
+resultFreq.innerHTML = noticeHtml("周波数を入力してください。");
+buildSonyGroupChips();
+renderSonyTable();
+renderRamsaTable();
+</script>
+</body>
+</html>
